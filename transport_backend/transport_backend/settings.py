@@ -62,6 +62,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.1.5500",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://swift-route-omega.vercel.app",
+]
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
