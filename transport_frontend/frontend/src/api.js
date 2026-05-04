@@ -35,7 +35,7 @@ export const signup = async (form) => {
 
 
 export const getBusParks = async () => {
-  const res = await fetch('http://127.0.0.1:8000/api/parks/');
+  const res = await fetch(`${API_BASE_URL}/api/parks/`);
   if (!res.ok) throw new Error("Failed to fetch parks");
   return res.json(); // Should return list of park objects
 };
