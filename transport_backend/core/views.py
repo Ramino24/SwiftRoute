@@ -2,6 +2,14 @@ import json
 import logging
 import requests
 from datetime import datetime, timedelta
+import qrcode
+import base64
+
+import os
+from io import BytesIO
+from xhtml2pdf import pisa
+from django.template.loader import get_template
+from django.core.mail import EmailMessage
 
 from django.conf import settings
 from django.db import transaction
@@ -11,7 +19,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from django.core.mail import send_mail
+
 
 from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import api_view, permission_classes, action
@@ -19,6 +27,9 @@ from rest_framework.generics import ListAPIView, CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 # SwiftRoute specific imports
 from .models import Booking, Route
@@ -98,7 +109,11 @@ class BookingViewSet(viewsets.ModelViewSet):
         return bookings
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # 1. Save the booking and attach the logged-in user
+        booking = serializer.save(user=self.request.user)
+
+        # 2. Log it to the terminal so you know it worked
+        print(f"DEBUG: Initial booking created for Ref: {booking.payment_reference}. Waiting for payment...")
 
     def perform_update(self, serializer):
         instance = self.get_object()
@@ -478,58 +493,76 @@ class PaymentCallbackView(APIView):
             booking = get_object_or_404(Booking, payment_reference=reference)
             
             with transaction.atomic():
-                trip = Trip.objects.select_for_update().get(id=booking.trip.id)
+                # Assuming you imported Trip properly
+                # trip = Trip.objects.select_for_update().get(id=booking.trip.id) 
+                
                 if response_data['status'] and response_data['data']['status'] == 'success':
                     booking.payment_status = 'successful'
                     booking.status = 'confirmed'
                     booking.save()
 
+                    # ==========================================
+                    # NEW PDF GENERATION LOGIC STARTS HERE
+                    # ==========================================
                     try:
-                        subject = f"Your SwiftRoute Ticket: {booking.payment_reference}"
-    
-                        # We use str(booking.trip) because your terminal shows that 
-                        # the Trip model already knows how to print "Dugbe Park ➜ Jibowu Terminal"
-                        message = (
-                            f"Hi {booking.user.first_name},\n\n"
-                            f"Your payment was successful! Your seat is confirmed.\n\n"
-                            f"Trip: {str(booking.trip)}\n"
-                            f"Reference: {booking.payment_reference}\n\n"
-                            f"Safe travels!\n- Team SwiftRoute"
-                        )
-    
-                        send_mail(
-                            subject,
-                            message,
-                            settings.DEFAULT_FROM_EMAIL,
-                            [booking.user.email],
-                            fail_silently=False,
-                        )
-                        print(f"DEBUG: Email sent successfully to {booking.user.email}!")
-                    except Exception as e:
-                        print(f"DEBUG: Email failed: {str(e)}")
+                        # 1. Generate the QR Code in memory and convert to Base64
+                        qr = qrcode.QRCode(version=1, box_size=10, border=0)
+                        qr.add_data(booking.payment_reference)
+                        qr.make(fit=True)
+                        img = qr.make_image(fill_color="black", back_color="white")
+                        buffer = BytesIO()
+                        img.save(buffer, format="PNG")
+                        qr_code_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-                    frontend_url = f'http://localhost:5173/travel-history'
-                    return HttpResponseRedirect(frontend_url)
-                else:
-                    booking.payment_status = 'failed'
-                    booking.status = 'cancelled'
-                    booking.seat_assignments.delete()
-                    trip.available_seats += booking.seat_count
-                    trip.save()
-                    return Response({
-                        'error': 'Payment failed',
-                        'booking': BookingDetailSerializer(booking).data
-                    }, status=status.HTTP_400_BAD_REQUEST)
-        except requests.RequestException as e:
-            with transaction.atomic():
-                booking = get_object_or_404(Booking, payment_reference=reference)
-                booking.payment_status = 'failed'
-                booking.status = 'cancelled'
-                booking.seat_assignments.delete()
-                trip = Trip.objects.select_for_update().get(id=booking.trip.id)
-                trip.available_seats += booking.seat_count
-                trip.save()
-            return Response({'error': f'Verification error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                        # 2. Build the exact Context for the new template
+                        context = {
+                            'user_name': booking.user.first_name or booking.user.username,
+                            'origin': booking.trip.route.origin_park.name,
+                            'destination': booking.trip.route.destination_park.name,
+                            'origin_city': 'Ibadan', # Replace if you have a city field
+                            'destination_city': 'Lagos', # Replace if you have a city field
+                            'date': booking.trip.departure_datetime.strftime('%a, %d %b %Y, %I:%M %p') if booking.trip.departure_datetime else "N/A",
+                            'seat_count': booking.seat_count,
+                            'seat_number': getattr(booking, 'seat_number', booking.seat_count),
+                            'bus_plate': getattr(booking.trip.bus, 'number_plate', 'TBD') if hasattr(booking.trip, 'bus') and booking.trip.bus else "TBD",
+                            'ref': booking.payment_reference,
+                            'qr_code_base64': qr_code_base64
+                        }
+
+                        # 3. Render HTML to PDF
+                        template = get_template('booking_receipt_email.html')
+                        html = template.render(context)
+                        result = BytesIO()
+                        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+
+                        if not pdf.err:
+                            email = EmailMessage(
+                                subject=f"SwiftRoute Official Ticket: {booking.payment_reference}",
+                                body=f"Hi {context['user_name']}, your payment was successful! Please find your official travel receipt attached.",
+                                from_email='SwiftRoute <bellofouad2406@gmail.com>',
+                                to=[booking.user.email],
+                            )
+
+                            # Attach the PDF
+                            email.attach(
+                                f'SwiftRoute_Ticket_{booking.payment_reference}.pdf', 
+                                result.getvalue(), 
+                                'application/pdf'
+                            )
+                            
+                            email.send()
+                            print(f"DEBUG: High-Fidelity PDF Email sent to {booking.user.email}!")
+                        else:
+                            print("DEBUG: PDF Engine Error")
+                            
+                    except Exception as e:
+                        print(f"DEBUG: Webhook Email failed: {str(e)}")
+
+            frontend_success_url = f"http://localhost:5173/travel-history"
+            return HttpResponseRedirect(frontend_success_url)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class PaystackWebhookView(APIView):
