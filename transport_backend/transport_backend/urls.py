@@ -29,7 +29,7 @@ admin.site.index_title = "Welcome to the SwiftRoute Dashboard"
 urlpatterns = [
     path('', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('admin/', admin.site.urls),
-    path('auth/', include('accounts.urls')),
+    path('api/auth/', include('accounts.urls')),
     path('api/', include('core.urls')),
     
      # Swagger & Redoc URLs
