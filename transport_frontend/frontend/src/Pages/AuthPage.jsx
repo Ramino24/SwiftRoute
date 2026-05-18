@@ -120,35 +120,12 @@ export default function AuthPage({ isOpen, onClose }) {
 
     console.log("Google Credential Response:", credentialResponse);
 
-    let idToken = credentialResponse.credential;
+    // 1. Grab either the credential (ID token) or the access_token
+    const tokenString = credentialResponse.credential || credentialResponse.access_token;
 
-    // Fallback: If no credential, try to fetch user info with access token
-    if (!idToken && credentialResponse.access_token) {
-      try {
-        const userInfoResponse = await axios.get(
-          "https://www.googleapis.com/oauth2/v3/userinfo",
-          {
-            headers: {
-              Authorization: `Bearer ${credentialResponse.access_token}`,
-            },
-          }
-        );
-        console.log("Google User Info:", userInfoResponse.data);
-        // Note: userinfo doesn't return ID token directly; rely on backend verification
-        idToken = credentialResponse.access_token; // Send access_token as fallback
-      } catch (err) {
-        console.error("Failed to fetch user info:", err);
-        const errorMessage = "Unable to validate Google access token.";
-        setError(errorMessage);
-        toast.error("Login failed! " + errorMessage, { autoClose: 1000 });
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (!idToken) {
-      const errorMessage = "No ID token received from Google.";
-      console.error("Missing ID token in response:", credentialResponse);
+    if (!tokenString) {
+      const errorMessage = "No valid token received from Google.";
+      console.error("Missing token in response:", credentialResponse);
       setError(errorMessage);
       toast.error("Login failed! " + errorMessage, { autoClose: 1000 });
       setLoading(false);
@@ -156,10 +133,11 @@ export default function AuthPage({ isOpen, onClose }) {
     }
 
     try {
+      // 2. Send it straight to Django! Your views.py will automatically figure out which token type it is.
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/google-auth/`,
         {
-          access_token: idToken, // Send ID token or access token as fallback
+          access_token: tokenString, 
         },
         {
           headers: {
@@ -167,6 +145,7 @@ export default function AuthPage({ isOpen, onClose }) {
           },
         }
       );
+      
       loginToContext(response.data, true);
       navigate("/", { replace: true });
       toast.success("Login successful! 🎉", { autoClose: 1000 });
