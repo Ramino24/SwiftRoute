@@ -256,7 +256,7 @@ class ParkRoutesView(APIView):
     def get(self, request, park_id):
         try:
             park = BusPark.objects.get(id=park_id, admin=request.user)
-            routes = Route.objects.all()
+            routes = Route.objects.exclude(origin_park__city=models.F('destination_park__city'))
             serializer = RouteSerializer(routes, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except BusPark.DoesNotExist:
