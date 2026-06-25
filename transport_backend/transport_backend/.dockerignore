@@ -1,0 +1,21 @@
+# Virtual environment
+venv/
+env/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Local Database (Production will use a separate PostgreSQL instance)
+db.sqlite3
+
+# Environment variables (These will be set securely in the Render dashboard)
+.env
+
+# Git history
+.git/
+.gitignore
+
+# Logs
+*.log

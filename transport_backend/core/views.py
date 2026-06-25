@@ -240,7 +240,7 @@ class ParkBusesView(APIView):
     def get(self, request, park_id):
         try:
             park = BusPark.objects.get(id=park_id, admin=request.user)
-            buses = park.buses.filter(status="available")
+            buses = Bus.objects.all()
             serializer = BusSerializer(buses, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except BusPark.DoesNotExist:
@@ -256,7 +256,7 @@ class ParkRoutesView(APIView):
     def get(self, request, park_id):
         try:
             park = BusPark.objects.get(id=park_id, admin=request.user)
-            routes = park.routes_from.filter(status="active")
+            routes = Route.objects.all()
             serializer = RouteSerializer(routes, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except BusPark.DoesNotExist:
@@ -318,9 +318,9 @@ class TripCreateView(APIView):
                     departure_datetime = serializer.validated_data['departure_datetime']
 
                     # Ensure bus belongs to the park
-                    if bus.park != park:
-                        errors.append({"trip_index": index, "error": f"Bus {bus.number_plate} does not belong to the specified park."})
-                        continue
+                    # if bus.park != park:
+                    #     errors.append({"trip_index": index, "error": f"Bus {bus.number_plate} does not belong to the specified park."})
+                    #     continue
 
                     # Check for ±2 hour bus conflict
                     bus_conflict = Trip.objects.filter(

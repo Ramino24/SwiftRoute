@@ -16,7 +16,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 # ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'w1nxrvdv-5173.uks1.devtunnels.ms']
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 
 
@@ -55,13 +55,15 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'transport_backend.urls'
 
-CORS_ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173,http://127.0.1.5500"
-).split(",")
-
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://127.0.1.5500",
+]
 CSRF_TRUSTED_ORIGINS = [
-    "https://swift-route-omega.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://127.0.1.5500",
 ]
 
 
