@@ -558,7 +558,7 @@ class PaymentCallbackView(APIView):
                     except Exception as e:
                         print(f"DEBUG: Webhook Email failed: {str(e)}")
 
-            frontend_success_url = f"http://localhost:5173/travel-history"
+            frontend_success_url = f"{settings.SITE_PROTOCOL}://{settings.SITE_DOMAIN}/travel-history"
             return HttpResponseRedirect(frontend_success_url)
 
         except Exception as e:

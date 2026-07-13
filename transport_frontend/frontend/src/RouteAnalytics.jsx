@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
+import API_BASE_URL from './api';
 
 const RouteAnalytics = ({ routeId }) => {
     const [data, setData] = useState(null);
@@ -10,7 +11,7 @@ const RouteAnalytics = ({ routeId }) => {
         const fetchAnalytics = async () => {
             try {
                 // Ensure your Django server is running!
-                const response = await axios.get(`http://127.0.0.1:8000/api/analytics/route/${routeId}/`);
+                const response = await axios.get(`${API_BASE_URL}/analytics/route/${routeId}/`);
                 setData(response.data);
                 setLoading(false);
             } catch (error) {

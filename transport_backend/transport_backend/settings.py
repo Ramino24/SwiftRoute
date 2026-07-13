@@ -17,6 +17,13 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 # ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'w1nxrvdv-5173.uks1.devtunnels.ms']
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+env_hosts = os.getenv("ALLOWED_HOSTS")
+if env_hosts:
+    ALLOWED_HOSTS.extend([host.strip() for host in env_hosts.split(",")])
+
+render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if render_host:
+    ALLOWED_HOSTS.append(render_host)
 
 
 
@@ -59,12 +66,21 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://127.0.1.5500",
+    "https://SwiftRoute.vercel.app",
 ]
+env_cors = os.getenv("CORS_ALLOWED_ORIGINS")
+if env_cors:
+    CORS_ALLOWED_ORIGINS.extend([origin.strip() for origin in env_cors.split(",")])
+
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://127.0.1.5500",
+    "https://SwiftRoute.vercel.app",
 ]
+env_csrf = os.getenv("CSRF_TRUSTED_ORIGINS")
+if env_csrf:
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in env_csrf.split(",")])
 
 
 REST_FRAMEWORK = {
@@ -122,9 +138,8 @@ EMAIL_HOST_USER = 'bellofouad2406@gmail.com'
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = 'SwiftRoute <bellofouad2406@gmail.com>'
 
-# SITE_DOMAIN = 'localhost:5173'
-SITE_DOMAIN = 'SwiftRoute.vercel.app'
-SITE_PROTOCOL = 'https'
+SITE_DOMAIN = os.getenv('SITE_DOMAIN', 'localhost:5173')
+SITE_PROTOCOL = os.getenv('SITE_PROTOCOL', 'http')
 
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')

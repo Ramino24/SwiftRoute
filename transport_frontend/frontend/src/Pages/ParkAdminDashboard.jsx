@@ -34,7 +34,7 @@ const AdminScanner = () => {
   const handleVerify = async (ref) => {
     try {
       // Note: Using authFetch since your project uses it for authenticated requests
-      const response = await authFetch(`http://localhost:8000/api/verify/${ref}/`);
+      const response = await authFetch(`/verify/${ref}/`);
       const data = await response.json();
       setVerificationResult(data);
     } catch (error) {
