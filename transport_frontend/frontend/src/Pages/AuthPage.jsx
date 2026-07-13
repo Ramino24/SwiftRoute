@@ -178,55 +178,69 @@ export default function AuthPage({ isOpen, onClose }) {
     }
   };
 
-  return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <ModalWrapper isOpen={isOpen} onClose={onClose}>
-        <TabNavigation
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          setError={setError}
-          resetForms={resetForms}
-        />
-        {error && <p className='text-sm text-red-500 mb-2'>{error}</p>}
-        {activeTab === "login" ? (
-          <>
-            <LoginForm
-              setError={setError}
-              getFriendlyErrorMessage={getFriendlyErrorMessage}
-              onClose={onClose}
-              resetForm={(resetFn) => (loginFormResetRef.current = resetFn)}
-              setActiveTab={setActiveTab} // Pass setActiveTab for password reset
-            />
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
+
+  const content = (
+    <ModalWrapper isOpen={isOpen} onClose={onClose}>
+      <TabNavigation
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        setError={setError}
+        resetForms={resetForms}
+      />
+      {error && <p className='text-sm text-red-500 mb-2'>{error}</p>}
+      {activeTab === "login" ? (
+        <>
+          <LoginForm
+            setError={setError}
+            getFriendlyErrorMessage={getFriendlyErrorMessage}
+            onClose={onClose}
+            resetForm={(resetFn) => (loginFormResetRef.current = resetFn)}
+            setActiveTab={setActiveTab} // Pass setActiveTab for password reset
+          />
+          {googleClientId && (
             <GoogleAuthButton
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
               loading={loading}
               action='Login'
             />
-          </>
-        ) : activeTab === "signup" ? (
-          <>
-            <SignupForm
-              setError={setError}
-              getFriendlyErrorMessage={getFriendlyErrorMessage}
-              onClose={onClose}
-              resetForm={(resetFn) => (signupFormResetRef.current = resetFn)}
-            />
+          )}
+        </>
+      ) : activeTab === "signup" ? (
+        <>
+          <SignupForm
+            setError={setError}
+            getFriendlyErrorMessage={getFriendlyErrorMessage}
+            onClose={onClose}
+            resetForm={(resetFn) => (signupFormResetRef.current = resetFn)}
+          />
+          {googleClientId && (
             <GoogleAuthButton
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
               loading={loading}
               action='Signup'
             />
-          </>
-        ) : (
-          <PasswordResetForm
-            setError={setError}
-            getFriendlyErrorMessage={getFriendlyErrorMessage}
-            onClose={onClose}
-          />
-        )}
-      </ModalWrapper>
-    </GoogleOAuthProvider>
+          )}
+        </>
+      ) : (
+        <PasswordResetForm
+          setError={setError}
+          getFriendlyErrorMessage={getFriendlyErrorMessage}
+          onClose={onClose}
+        />
+      )}
+    </ModalWrapper>
   );
+
+  if (googleClientId) {
+    return (
+      <GoogleOAuthProvider clientId={googleClientId}>
+        {content}
+      </GoogleOAuthProvider>
+    );
+  }
+
+  return content;
 }
