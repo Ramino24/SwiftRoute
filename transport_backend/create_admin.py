@@ -18,7 +18,7 @@ if not User.objects.filter(email=email).exists():
         password=password,
         first_name="System",
         last_name="Admin",
-        role="admin" # Matches your role_display logic
+        role="park_admin" # Matches your role_display logic and frontend check
     )
     print("Superuser created successfully.")
 else:
