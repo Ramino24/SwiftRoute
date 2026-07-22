@@ -511,16 +511,7 @@ class PaymentCallbackView(APIView):
                     # HIGH-FIDELITY HTML EMAIL LOGIC
                     # ==========================================
                     try:
-                        # 1. Generate the QR Code in memory and convert to Base64
-                        qr = qrcode.QRCode(version=1, box_size=10, border=0)
-                        qr.add_data(booking.payment_reference)
-                        qr.make(fit=True)
-                        img = qr.make_image(fill_color="black", back_color="white")
-                        buffer = BytesIO()
-                        img.save(buffer, format="PNG")
-                        qr_code_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-
-                        # 2. Build the Context dynamically
+                        # 1. Build the Context dynamically (QR code is loaded via API in the template)
                         context = {
                             'user_name': booking.user.first_name or booking.user.username,
                             'origin': booking.trip.route.origin_park.name,
@@ -532,14 +523,13 @@ class PaymentCallbackView(APIView):
                             'seat_number': ", ".join(map(str, booking.seat_assignments.values_list('seat_number', flat=True))) or str(booking.seat_count),
                             'bus_plate': getattr(booking.trip.bus, 'number_plate', 'TBD') if hasattr(booking.trip, 'bus') and booking.trip.bus else "TBD",
                             'ref': booking.payment_reference,
-                            'qr_code_base64': qr_code_base64
                         }
 
-                        # 3. Render HTML to string
+                        # 2. Render HTML to string
                         html_content = render_to_string('booking_receipt_email.html', context)
                         text_content = f"Hi {context['user_name']}, your payment was successful! Your ticket reference is {booking.payment_reference}."
 
-                        # 4. Send the HTML email directly (no PDF compilation needed)
+                        # 3. Send the HTML email directly (no PDF compilation or QR image processing needed)
                         email = EmailMultiAlternatives(
                             subject=f"SwiftRoute Ticket Pass: {booking.payment_reference}",
                             body=text_content,
