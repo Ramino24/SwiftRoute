@@ -492,11 +492,14 @@ class PaymentCallbackView(APIView):
             
             booking = get_object_or_404(Booking, payment_reference=reference)
             
-            with transaction.atomic():
-                # Assuming you imported Trip properly
-                # trip = Trip.objects.select_for_update().get(id=booking.trip.id) 
-                
-                if response_data['status'] and response_data['data']['status'] == 'success':
+            is_success = (
+                response_data.get('status') is True and 
+                response_data.get('data') is not None and 
+                response_data['data'].get('status') == 'success'
+            )
+            
+            if is_success:
+                with transaction.atomic():
                     booking.payment_status = 'successful'
                     booking.status = 'confirmed'
                     booking.save()
@@ -557,6 +560,14 @@ class PaymentCallbackView(APIView):
                             
                     except Exception as e:
                         print(f"DEBUG: Webhook Email failed: {str(e)}")
+            else:
+                with transaction.atomic():
+                    booking.payment_status = 'failed'
+                    booking.status = 'cancelled'
+                    booking.seat_assignments.all().delete()
+                    trip = booking.trip
+                    trip.available_seats += booking.seat_count
+                    trip.save()
 
             frontend_success_url = f"{settings.SITE_PROTOCOL}://{settings.SITE_DOMAIN}/travel-history"
             return HttpResponseRedirect(frontend_success_url)
