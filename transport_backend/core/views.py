@@ -476,9 +476,12 @@ class InitializePaymentView(APIView):
 
 class PaymentCallbackView(APIView):
     def get(self, request):
+        from django.http import JsonResponse
+        import traceback
+        
         reference = request.query_params.get('reference')
         if not reference:
-            return Response({'error': 'No reference provided.'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'error': 'No reference provided.'}, status=status.HTTP_400_BAD_REQUEST)
         
         url = f'https://api.paystack.co/transaction/verify/{reference}'
         headers = {
@@ -573,7 +576,8 @@ class PaymentCallbackView(APIView):
             return HttpResponseRedirect(frontend_success_url)
 
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(f"Error in PaymentCallbackView: {traceback.format_exc()}")
+            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class PaystackWebhookView(APIView):
