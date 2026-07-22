@@ -151,7 +151,17 @@ export default function SeatAvailability() {
       console.log("Booking response data:", bookingData);
 
       if (!bookingResponse.ok) {
-        throw new Error(bookingData?.message || "Booking failed");
+        let errMsg = "Booking failed";
+        if (bookingData) {
+          if (bookingData.message) {
+            errMsg = bookingData.message;
+          } else if (typeof bookingData === "object") {
+            errMsg = Object.entries(bookingData)
+              .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
+              .join(" | ");
+          }
+        }
+        throw new Error(errMsg);
       }
 
       // Initialize payment
