@@ -419,7 +419,7 @@ class InitializePaymentView(APIView):
                 if conflicting_seats:
                     booking.payment_status = 'failed'
                     booking.status = 'cancelled'
-                    booking.seat_assignments.delete()
+                    booking.seat_assignments.all().delete()
                     trip.available_seats += booking.seat_count
                     trip.save()
                     return Response(
@@ -456,7 +456,7 @@ class InitializePaymentView(APIView):
                     with transaction.atomic():
                         booking.payment_status = 'failed'
                         booking.status = 'cancelled'
-                        booking.seat_assignments.delete()
+                        booking.seat_assignments.all().delete()
                         trip = Trip.objects.select_for_update().get(id=booking.trip.id)
                         trip.available_seats += booking.seat_count
                         trip.save()
@@ -465,7 +465,7 @@ class InitializePaymentView(APIView):
                 with transaction.atomic():
                     booking.payment_status = 'failed'
                     booking.status = 'cancelled'
-                    booking.seat_assignments.delete()
+                    booking.seat_assignments.all().delete()
                     trip = Trip.objects.select_for_update().get(id=booking.trip.id)
                     trip.available_seats += booking.seat_count
                     trip.save()
