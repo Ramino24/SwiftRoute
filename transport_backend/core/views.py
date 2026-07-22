@@ -507,40 +507,40 @@ class PaymentCallbackView(APIView):
                     booking.status = 'confirmed'
                     booking.save()
 
-                    # ==========================================
-                    # HIGH-FIDELITY HTML EMAIL LOGIC
-                    # ==========================================
-                    try:
-                        # 1. Build the Context dynamically (QR code is loaded via API in the template)
-                        context = {
-                            'user_name': booking.user.first_name or booking.user.username,
-                            'origin': booking.trip.route.origin_park.name,
-                            'destination': booking.trip.route.destination_park.name,
-                            'origin_city': booking.trip.route.origin_park.city.name,
-                            'destination_city': booking.trip.route.destination_park.city.name,
-                            'date': booking.trip.departure_datetime.strftime('%a, %d %b %Y, %I:%M %p') if booking.trip.departure_datetime else "N/A",
-                            'seat_count': booking.seat_count,
-                            'seat_number': ", ".join(map(str, booking.seat_assignments.values_list('seat_number', flat=True))) or str(booking.seat_count),
-                            'bus_plate': getattr(booking.trip.bus, 'number_plate', 'TBD') if hasattr(booking.trip, 'bus') and booking.trip.bus else "TBD",
-                            'ref': booking.payment_reference,
-                        }
+                # ==========================================
+                # HIGH-FIDELITY HTML EMAIL LOGIC (OUTSIDE TRANSACTION)
+                # ==========================================
+                try:
+                    # 1. Build the Context dynamically (QR code is loaded via API in the template)
+                    context = {
+                        'user_name': booking.user.first_name or booking.user.username,
+                        'origin': booking.trip.route.origin_park.name,
+                        'destination': booking.trip.route.destination_park.name,
+                        'origin_city': booking.trip.route.origin_park.city.name,
+                        'destination_city': booking.trip.route.destination_park.city.name,
+                        'date': booking.trip.departure_datetime.strftime('%a, %d %b %Y, %I:%M %p') if booking.trip.departure_datetime else "N/A",
+                        'seat_count': booking.seat_count,
+                        'seat_number': ", ".join(map(str, booking.seat_assignments.values_list('seat_number', flat=True))) or str(booking.seat_count),
+                        'bus_plate': getattr(booking.trip.bus, 'number_plate', 'TBD') if hasattr(booking.trip, 'bus') and booking.trip.bus else "TBD",
+                        'ref': booking.payment_reference,
+                    }
 
-                        # 2. Render HTML to string
-                        html_content = render_to_string('booking_receipt_email.html', context)
-                        text_content = f"Hi {context['user_name']}, your payment was successful! Your ticket reference is {booking.payment_reference}."
+                    # 2. Render HTML to string
+                    html_content = render_to_string('booking_receipt_email.html', context)
+                    text_content = f"Hi {context['user_name']}, your payment was successful! Your ticket reference is {booking.payment_reference}."
 
-                        # 3. Send the HTML email directly (no PDF compilation or QR image processing needed)
-                        email = EmailMultiAlternatives(
-                            subject=f"SwiftRoute Ticket Pass: {booking.payment_reference}",
-                            body=text_content,
-                            from_email='SwiftRoute <bellofouad2406@gmail.com>',
-                            to=[booking.user.email],
-                        )
-                        email.attach_alternative(html_content, "text/html")
-                        email.send()
-                        print(f"DEBUG: High-Fidelity HTML Email sent to {booking.user.email}!")
-                    except Exception as e:
-                        print(f"DEBUG: HTML Email failed: {str(e)}")
+                    # 3. Send the HTML email directly (no PDF compilation or QR image processing needed)
+                    email = EmailMultiAlternatives(
+                        subject=f"SwiftRoute Ticket Pass: {booking.payment_reference}",
+                        body=text_content,
+                        from_email='SwiftRoute <bellofouad2406@gmail.com>',
+                        to=[booking.user.email],
+                    )
+                    email.attach_alternative(html_content, "text/html")
+                    email.send()
+                    print(f"DEBUG: High-Fidelity HTML Email sent to {booking.user.email}!")
+                except Exception as e:
+                    logger.error(f"HTML Email sending failed: {str(e)}")
             else:
                 with transaction.atomic():
                     booking.payment_status = 'failed'
