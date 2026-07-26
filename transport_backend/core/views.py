@@ -529,7 +529,7 @@ class PaymentCallbackView(APIView):
                     html_content = render_to_string('booking_receipt_email.html', context)
                     text_content = f"Hi {context['user_name']}, your payment was successful! Your ticket reference is {booking.payment_reference}."
 
-                    # 3. Create the HTML email object
+                    # 3. Send the HTML email directly (no PDF compilation or QR image processing needed)
                     email = EmailMultiAlternatives(
                         subject=f"SwiftRoute Ticket Pass: {booking.payment_reference}",
                         body=text_content,
@@ -537,21 +537,10 @@ class PaymentCallbackView(APIView):
                         to=[booking.user.email],
                     )
                     email.attach_alternative(html_content, "text/html")
-                    
-                    # 4. Send asynchronously in a background thread to prevent SMTP socket hangs from causing Gunicorn timeout exits
-                    import threading
-                    def send_async(email_msg):
-                        try:
-                            email_msg.send()
-                            print(f"DEBUG: Asynchronous HTML Email sent to {booking.user.email}!")
-                        except Exception as mail_err:
-                            logger.error(f"Async HTML Email sending failed: {str(mail_err)}")
-
-                    thread = threading.Thread(target=send_async, args=(email,))
-                    thread.start()
-                    
+                    email.send()
+                    print(f"DEBUG: High-Fidelity HTML Email sent to {booking.user.email}!")
                 except Exception as e:
-                    logger.error(f"HTML Email preparation failed: {str(e)}")
+                    logger.error(f"HTML Email sending failed: {str(e)}")
             else:
                 with transaction.atomic():
                     booking.payment_status = 'failed'
