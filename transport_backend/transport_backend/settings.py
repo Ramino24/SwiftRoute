@@ -66,6 +66,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://127.0.1.5500",
+    "https://swift-route-seven.vercel.app",
     "https://SwiftRoute.vercel.app",
 ]
 env_cors = os.getenv("CORS_ALLOWED_ORIGINS")
@@ -76,6 +77,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://127.0.1.5500",
+    "https://swift-route-seven.vercel.app",
     "https://SwiftRoute.vercel.app",
 ]
 env_csrf = os.getenv("CSRF_TRUSTED_ORIGINS")
@@ -110,7 +112,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile']
 # SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://127.0.0.1:8000/auth/complete/google-oauth2/'
-SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'https://SwiftRoute.vercel.app/auth/complete/google-oauth2/'
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'https://swift-route-seven.vercel.app/auth/complete/google-oauth2/'
 
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
